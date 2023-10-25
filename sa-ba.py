@@ -1046,7 +1046,7 @@ def extract_keywords_from_image(image):
 
 # 3. GPT APIを使用して俳句の生成
 def generate_haiku(keywords):
-    openai.api_key = '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'  # OpenAIのAPIキーを設定
+    openai.api_key = 'APIキー'  # OpenAIのAPIキーを設定
     prompt = f"これから俳句を作ります。以下のキーワードから小学生でも知っている単語を作って俳句を作ってください。キーワード：「{', '.join(keywords)}」"  # プロンプトの作成
     response = openai.ChatCompletion.create(model="gpt-4", messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": prompt}])  # GPT-4にプロンプトを送信して俳句を生成
     try:
