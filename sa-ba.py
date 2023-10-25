@@ -1,13 +1,13 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from googletrans import Translator
-import torch
-import torchvision.models as models
-import torchvision.transforms as transforms
-from PIL import Image
-from io import BytesIO
-import openai
-import base64
+from flask import Flask, request, jsonify  # Flask関連のインポート
+from flask_cors import CORS  # CORSのハンドリング用
+from googletrans import Translator  # Google翻訳ライブラリ
+import torch  # PyTorch
+import torchvision.models as models  # torchvisionのモデル群
+import torchvision.transforms as transforms  # 画像前処理用のtransforms
+from PIL import Image  # 画像処理ライブラリ
+from io import BytesIO  # バイトデータを扱うためのライブラリ
+import openai  # OpenAIのAPIを使うためのライブラリ
+import base64  # Base64エンコード/デコード用ライブラリ
 
 # ImageNetのクラスインデックスとクラス名のマッピング（仮置き）
 idx_to_class = {0: 'tench, Tinca tinca',
@@ -1009,79 +1009,69 @@ idx_to_class = {0: 'tench, Tinca tinca',
  996: 'hen-of-the-woods, hen of the woods, Polyporus frondosus, Grifola frondosa',
  997: 'bolete',
  998: 'ear, spike, capitulum',
- 999: 'toilet tissue, toilet paper, bathroom tissue'} # これは簡単な例です
+ 999: 'toilet tissue, toilet paper, bathroom tissue'}  
 
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__)  # Flaskアプリケーションのインスタンスを作成
+CORS(app)  # CORSを設定
 
-# 省略: translate_to_japanese, extract_keywords_from_image, generate_haiku 関数
 # キーワードを日本語に翻訳する関数
 def translate_to_japanese(text):
-    translator = Translator()
-    translated = translator.translate(text, src='en', dest='ja')
-    return translated.text
-
+    translator = Translator()  # 翻訳オブジェクトの作成
+    translated = translator.translate(text, src='en', dest='ja')  # 英語から日本語に翻訳
+    return translated.text  # 翻訳されたテキストを返す
 
 # 1. 画像認識モデルの設定
-model = models.resnet50(pretrained=True)
-model.eval()
+model = models.resnet50(pretrained=True)  # 事前学習済みのResNet-50モデルをロード
+model.eval()  # 評価モードに設定
 
 # 画像の前処理の設定
 preprocess = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    transforms.Resize(256),  # 画像を256x256にリサイズ
+    transforms.CenterCrop(224),  # 画像の中央を224x224でクロップ
+    transforms.ToTensor(),  # 画像をPyTorchのテンソルに変換
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # 画像の正規化
 ])
 
 # 2. 画像からキーワードを抽出
 def extract_keywords_from_image(image):
-    input_tensor = preprocess(image)
-    input_batch = input_tensor.unsqueeze(0)
-    with torch.no_grad():
-        output = model(input_batch)
+    input_tensor = preprocess(image)  # 画像の前処理
+    input_batch = input_tensor.unsqueeze(0)  # バッチ次元を追加
+    with torch.no_grad():  # 勾配計算を無効にしてメモリ使用量を削減
+        output = model(input_batch)  # モデルに画像を渡して予測を実行
     num_keywords = 2
-    _, indices = output.topk(num_keywords)
-    keywords = [idx_to_class[idx.item()] for idx in indices[0]]
-    keywords = [translate_to_japanese(keyword) for keyword in keywords]
-    return keywords
+    _, indices = output.topk(num_keywords)  # 上位2つのクラスのインデックスを取得
+    keywords = [idx_to_class[idx.item()] for idx in indices[0]]  # クラス名に変換
+    keywords = [translate_to_japanese(keyword) for keyword in keywords]  # クラス名を日本語に翻訳
+    return keywords  # キーワードを返す
 
 # 3. GPT APIを使用して俳句の生成
 def generate_haiku(keywords):
-    openai.api_key = 'APIkey'
-    prompt = f"これから俳句を作ります。以下のキーワードから小学生でも知っている単語を作って俳句を作ってください。キーワード：「{', '.join(keywords)}」"
-    response = openai.ChatCompletion.create(model="gpt-4", messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": prompt}])
-    
-    # APIのレスポンスをプリントして確認
-    print(response)
-    print(keywords)
-    
+    openai.api_key = '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'  # OpenAIのAPIキーを設定
+    prompt = f"これから俳句を作ります。以下のキーワードから小学生でも知っている単語を作って俳句を作ってください。キーワード：「{', '.join(keywords)}」"  # プロンプトの作成
+    response = openai.ChatCompletion.create(model="gpt-4", messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": prompt}])  # GPT-4にプロンプトを送信して俳句を生成
     try:
-
-        haiku = response['choices'][0]['message']['content'].strip()
-
+        haiku = response['choices'][0]['message']['content'].strip()  # 生成された俳句を取得
     except AttributeError:
-        print("Couldn't find 'text' attribute in the response.")
-        haiku = "Error"
-        
-    return haiku
+        print("Couldn't find 'text' attribute in the response.")  # エラーメッセージ
+        haiku = "Error"  # エラー時の俳句
+    return haiku  # 俳句を返す
 
-@app.route('/generate_haiku', methods=['POST'])
+@app.route('/generate_haiku', methods=['POST'])  # /generate_haikuエンドポイントを定義
 def receive_images():
-    data = request.json  # 複数の画像データを受け取る
-    haikus = []
+    data = request.json  # クライアントからのJSONデータを受け取る
+    haikus = []  # 生成された俳句を格納するリスト
 
-    for img_data in data:
-        image_base64 = img_data['image']
-        image_data = BytesIO(base64.b64decode(image_base64))
-        image = Image.open(image_data).convert("RGB")
+    for img_data in data:  # 画像データごとにループ
+        image_base64 = img_data['image']  # 画像データを取得
+        image_data = BytesIO(base64.b64decode(image_base64))  # Base64デコードしてバイトデータに変換
+        image = Image.open(image_data).convert("RGB")  # 画像データを開いてRGBに変換
 
-        keywords = extract_keywords_from_image(image)
-        haiku = generate_haiku(keywords)
-        
-        haikus.append({'id': img_data['id'], 'haiku': haiku})
+        keywords = extract_keywords_from_image(image)  # 画像からキーワードを抽出
+        haiku = generate_haiku(keywords)  # キーワードから俳句を生成
 
-    return jsonify(haikus)
+        haikus.append({'id': img_data['id'], 'haiku': haiku})  # 生成された俳句をリストに追加
+
+    return jsonify(haikus)  # 生成された俳句のリストをJSONとして返す
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000)  # サーバーを起動
