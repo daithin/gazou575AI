@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Photo Capture with Vue.js</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>  <!-- Vue.jsのライブラリを読み込む -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>  <!-- axiosライブラリを読み込む -->
+</head>
+<body>
+  <div id="app">  <!-- Vue.jsアプリのルート要素 -->
+    <h1>写真を撮るよ～✌️</h1>
+    <video id="video" width="640" height="480" autoplay></video>  <!-- ビデオ要素でカメラフィードを表示 -->
+    <button @click="capture()">撮影</button>  <!-- 撮影ボタン -->
+    <button @click="sendImages()">俳句生成</button>  <!-- 俳句生成ボタン -->
+    <input type="file" @change="onFileChange" multiple />  <!-- ファイルアップロード要素 -->
+    <canvas id="canvas" width="640" height="480"></canvas>  <!-- 画像をキャプチャーするためのキャンバス要素 -->
+    <img id="capturedPhoto" width="640" height="480"/>  <!-- キャプチャーされた写真を表示するためのimg要素 -->
+  </div>
+
+  <script>
+    var app = new Vue({
+      el: '#app',  // アプリのルート要素を指定
+      data: {
+        images: []  // キャプチャーされた画像の配列
+      },
+      methods: {
+        capture() {  // 撮影関数
+          const canvas = document.getElementById('canvas');
+          const context = canvas.getContext('2d');
+          const video = document.getElementById('video');
+          
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);  // ビデオフィードからキャンバスに画像を描画
+          const photoData = canvas.toDataURL('image/jpeg').split(",")[1];  // キャンバスから画像データを取得
+          this.images.push({ id: this.images.length, image: photoData });  // 画像データを配列に追加
+        },
+        onFileChange(e) {  // ファイルアップロードイベントハンドラ
+          const files = e.target.files;
+          Array.from(files).forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              this.images.push({ id: this.images.length, image: e.target.result.split(",")[1] });  // ファイルから読み取った画像データを配列に追加
+            };
+            reader.readAsDataURL(file);
+          });
+        },
+        async sendImages() {  // 画像をサーバに送信し、俳句を生成
+          try {
+            const response = await axios.post('http://192.168.11.2:5000/generate_haiku', this.images);  // サーバに画像データをPOST
+            const haikus = response.data;  // サーバから受け取った俳句データ
+            haikus.forEach((haikuData) => {
+              alert(`ID: ${haikuData.id}, 生成された俳句: ${haikuData.haiku}`);  // 各俳句データをアラートで表示
+            });
+          } catch (error) {
+            console.error('エラーが発生したわ:', error);  // エラーログ
+          }
+        }
+      },
+      mounted() {  // コンポーネントがマウントされた後に実行
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then((stream) => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;  // カメラフィードをビデオ要素にセット
+          })
+          .catch((err) => {
+            console.error('カメラの初期化でエラーが発生:', err);  // エラーログ
+          });
+      }
+    });
+  </script>
+</body>
+</html>
