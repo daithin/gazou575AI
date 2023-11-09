@@ -1,21 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simple Photo Capture with Vue.js</title>
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>  <!-- Vue.jsのライブラリを読み込む -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>  <!-- axiosライブラリを読み込む -->
+  <!-- BootstrapのCSSを読み込む -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
 </head>
 <body>
-  <div id="app">  <!-- Vue.jsアプリのルート要素 -->
-    <h1>写真を撮るよ～✌️</h1>
-    <video id="video" width="640" height="480" autoplay></video>  <!-- ビデオ要素でカメラフィードを表示 -->
-    <button @click="capture()">撮影</button>  <!-- 撮影ボタン -->
-    <button @click="sendImages()">俳句生成</button>  <!-- 俳句生成ボタン -->
-    <input type="file" @change="onFileChange" multiple />  <!-- ファイルアップロード要素 -->
-    <canvas id="canvas" width="640" height="480"></canvas>  <!-- 画像をキャプチャーするためのキャンバス要素 -->
-    <img id="capturedPhoto" width="640" height="480"/>  <!-- キャプチャーされた写真を表示するためのimg要素 -->
+  <div id="app" class="container py-5">
+    <h1 class="text-center mb-4">写真を撮るよ～✌️</h1>
+    <div class="row justify-content-center mb-3">
+      <video id="video" width="640" height="480" autoplay class="border"></video>
+    </div>
+    <div class="row justify-content-center mb-3">
+      <button class="btn btn-primary mx-2" @click="capture()">撮影</button>
+      <button class="btn btn-success mx-2" @click="sendImages()">俳句生成</button>
+    </div>
+    <div class="row justify-content-center mb-3">
+      <input type="file" @change="onFileChange" multiple class="form-control-file" />
+    </div>
+    <div class="row justify-content-center mb-3">
+      <canvas id="canvas" width="640" height="480" class="border"></canvas>
+    </div>
+    <div class="row justify-content-center">
+      <img id="capturedPhoto" width="640" height="480" class="img-fluid" />
+    </div>
   </div>
 
+  <!-- ここにVue.jsのスクリプトを含める -->
   <script>
     var app = new Vue({
       el: '#app',  // アプリのルート要素を指定
@@ -44,7 +59,7 @@
         },
         async sendImages() {  // 画像をサーバに送信し、俳句を生成
           try {
-            const response = await axios.post('http://192.168.11.2:5000/generate_haiku', this.images);  // サーバに画像データをPOST
+            const response = await axios.post('http://192.168.8.89:5000/generate_haiku', this.images);  // サーバに画像データをPOST（アドレスは自分で建てたやつ使う
             const haikus = response.data;  // サーバから受け取った俳句データ
             haikus.forEach((haikuData) => {
               alert(`ID: ${haikuData.id}, 生成された俳句: ${haikuData.haiku}`);  // 各俳句データをアラートで表示
@@ -66,5 +81,10 @@
       }
     });
   </script>
+
+  <!-- BootstrapのJavaScript -->
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>
